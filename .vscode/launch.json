@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM32F103C8 (OpenOCD / ST-LINK)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "preLaunchTask": "Build DHJ Debug",
+            "device": "STM32F103C8",
+            "executable": "${workspaceFolder}/build/Debug/DHJ.elf",
+            "serverpath": "/opt/homebrew/bin/openocd",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f1x.cfg"
+            ],
+            "runToMain": true,
+            "showDevDebugOutput": "none"
+        },
+        {
+            "name": "STM32F103C8 (ST-LINK GDB Server)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "stlink",
+            "preLaunchTask": "Build DHJ Debug",
+            "device": "STM32F103C8",
+            "executable": "${workspaceFolder}/build/Debug/DHJ.elf",
+            "runToMain": true,
+            "showDevDebugOutput": "none"
+        }
+    ]
+}
