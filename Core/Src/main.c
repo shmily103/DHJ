@@ -269,9 +269,10 @@ static void System_WatchdogInit(void)
 
 void System_FaultShutdown(void)
 {
-  GPIOB->BRR = CH_EN_Pin;
+  GPIOB->BRR = ADC_EN_Pin;
   GPIOA->BRR = C1_Pin | C2_Pin | C3_Pin | C4_Pin | BUZZER_Pin;
   TIM1->CCR1 = 0U;
+  TIM2->CCR1 = 0U;
   TIM2->CCR4 = 0U;
   __DSB();
 }

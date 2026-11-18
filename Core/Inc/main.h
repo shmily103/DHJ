@@ -58,6 +58,8 @@ void System_FaultShutdown(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define CH_EN_Pin GPIO_PIN_0
+#define CH_EN_GPIO_Port GPIOA
 #define ADC_C1_Pin GPIO_PIN_1
 #define ADC_C1_GPIO_Port GPIOA
 #define ADC_C2_Pin GPIO_PIN_2
@@ -78,8 +80,8 @@ void System_FaultShutdown(void);
 #define TFT_CS_GPIO_Port GPIOB
 #define TFT_BL_Pin GPIO_PIN_11
 #define TFT_BL_GPIO_Port GPIOB
-#define CH_EN_Pin GPIO_PIN_12
-#define CH_EN_GPIO_Port GPIOB
+#define ADC_EN_Pin GPIO_PIN_12
+#define ADC_EN_GPIO_Port GPIOB
 #define Touch_Pin GPIO_PIN_14
 #define Touch_GPIO_Port GPIOB
 #define Touch_EXTI_IRQn EXTI15_10_IRQn

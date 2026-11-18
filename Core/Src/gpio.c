@@ -53,7 +53,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, TFT_RES_Pin|TFT_DC_Pin|TFT_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CH_EN_GPIO_Port, CH_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, C4_Pin|C3_Pin|C2_Pin|C1_Pin
@@ -66,12 +66,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CH_EN_Pin */
-  GPIO_InitStruct.Pin = CH_EN_Pin;
+  /*Configure GPIO pin : ADC_EN_Pin */
+  GPIO_InitStruct.Pin = ADC_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(CH_EN_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(ADC_EN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Touch_Pin */
   GPIO_InitStruct.Pin = Touch_Pin;

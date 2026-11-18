@@ -201,3 +201,4 @@ HAL_StatusTypeDef I2C1_RecoverBus(void)
 }
 
 /* USER CODE END 1 */
+

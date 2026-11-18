@@ -36,6 +36,7 @@
 #define POWER_MGR_PPS_STEP_MV              100U
 #define POWER_MGR_HARDWARE_MIN_MV CH224A_PPS_MIN_VOLTAGE_MV
 #define POWER_MGR_PPS_MAX_MV              11500U
+#define POWER_MGR_LOW_VOLTAGE_DUTY_PERCENT   10U
 
 static PowerMgr_Status_t g_status = {0};
 static uint32_t g_last_sample_ms = 0U;
@@ -73,6 +74,7 @@ static float g_calibration_target_voltage_v = 0.0f;
 static float g_calibration_current_a = 0.0f;
 
 static void PowerMgr_ResetNegotiation(void);
+static void PowerMgr_ApplyChargeOutput(uint8_t enabled);
 static uint8_t PowerMgr_GetPpsCurrentLimitMa(uint16_t voltage_mv,
                                              uint16_t *current_ma);
 
@@ -115,6 +117,7 @@ static void PowerMgr_SetChargeOutput(uint8_t enabled)
     {
       PowerMgr_ResetNegotiation();
     }
+    PowerMgr_ApplyChargeOutput(next_enabled);
     return;
   }
 
@@ -123,9 +126,8 @@ static void PowerMgr_SetChargeOutput(uint8_t enabled)
     PowerMgr_ResetNegotiation();
   }
 
-  HAL_GPIO_WritePin(CH_EN_GPIO_Port, CH_EN_Pin,
-                    (next_enabled != 0U) ? GPIO_PIN_SET : GPIO_PIN_RESET);
   g_charge_output_enabled = next_enabled;
+  PowerMgr_ApplyChargeOutput(next_enabled);
   g_negative_current_tracking = 0U;
   if (next_enabled != 0U)
   {
@@ -212,6 +214,52 @@ static uint8_t PowerMgr_GetCapacitorVoltage(float *voltage_v)
 {
   return (uint8_t)((voltage_v != NULL) &&
                    (Control_GetTotalVoltage(voltage_v) != 0U));
+}
+
+static uint16_t PowerMgr_GetMinimumPpsVoltageMv(void)
+{
+  uint16_t minimum_voltage_mv = UINT16_MAX;
+  uint8_t i = 0U;
+
+  for (i = 0U; i < g_pps_capability_count; i++)
+  {
+    uint16_t capability_min_mv = g_pps_capabilities[i].min_voltage_mv;
+    uint16_t capability_max_mv = g_pps_capabilities[i].max_voltage_mv;
+
+    if (capability_min_mv < POWER_MGR_HARDWARE_MIN_MV)
+    {
+      capability_min_mv = POWER_MGR_HARDWARE_MIN_MV;
+    }
+    if ((capability_min_mv <= capability_max_mv) &&
+        (capability_min_mv < minimum_voltage_mv))
+    {
+      minimum_voltage_mv = capability_min_mv;
+    }
+  }
+
+  return (minimum_voltage_mv == UINT16_MAX) ?
+         POWER_MGR_HARDWARE_MIN_MV : minimum_voltage_mv;
+}
+
+static void PowerMgr_ApplyChargeOutput(uint8_t enabled)
+{
+  uint32_t pulse = 0U;
+
+  if (enabled != 0U)
+  {
+    float capacitor_voltage_v = 0.0f;
+    uint16_t minimum_voltage_mv = PowerMgr_GetMinimumPpsVoltageMv();
+    uint32_t period = (uint32_t)htim2.Init.Period + 1U;
+
+    pulse = period;
+    if ((PowerMgr_GetCapacitorVoltage(&capacitor_voltage_v) != 0U) &&
+        ((capacitor_voltage_v * 1000.0f) < (float)minimum_voltage_mv))
+    {
+      pulse = (period * POWER_MGR_LOW_VOLTAGE_DUTY_PERCENT) / 100U;
+    }
+  }
+
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pulse);
 }
 
 /*
@@ -388,7 +436,11 @@ void PowerMgr_Init(void)
   g_calibration_target_voltage_v = 0.0f;
   g_calibration_current_a = 0.0f;
 
-  HAL_GPIO_WritePin(CH_EN_GPIO_Port, CH_EN_Pin, GPIO_PIN_RESET);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0U);
+  if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   CH224A_Init();
   g_status.ina226_connected = 0U;
 }
@@ -796,6 +848,8 @@ void PowerMgr_ChargeTask(void)
       PowerMgr_SetChargeState(POWER_MGR_CHARGE_WAIT_SOURCE);
       return;
     }
+
+    PowerMgr_ApplyChargeOutput(1U);
 
     if (g_status.measurement_tick_ms != g_last_current_sample_ms)
     {

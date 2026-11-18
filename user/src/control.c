@@ -251,6 +251,7 @@ static ControlAdcSampleResult_t Control_PrepareVoltageSampling(void)
     {
       g_adc_average_collecting = 0U;
       __set_PRIMASK(primask);
+      HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_RESET);
       return CONTROL_ADC_SAMPLE_FAILED;
     }
     __set_PRIMASK(primask);
@@ -271,6 +272,7 @@ static ControlAdcSampleResult_t Control_PrepareVoltageSampling(void)
   {
     g_adc_balance_settling = 1U;
     g_adc_balance_settle_start_ms = now;
+    HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_SET);
     __set_PRIMASK(primask);
     return CONTROL_ADC_SAMPLE_PENDING;
   }
@@ -1032,6 +1034,7 @@ static void Control_UpdateMeasurements(uint32_t now)
   }
   if (sample_result == CONTROL_ADC_SAMPLE_FAILED)
   {
+    HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_RESET);
     g_cell_measurements_valid = 0U;
     Control_DisableBalanceOutputs();
     Control_StopPulseOutput();
@@ -1306,7 +1309,8 @@ void Control_CancelCalibration(void)
 /* 电源故障时立即关闭充电、均衡、点焊和背光输出。 */
 void Control_PowerFailShutdown(void)
 {
-  HAL_GPIO_WritePin(CH_EN_GPIO_Port, CH_EN_Pin, GPIO_PIN_RESET);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0U);
+  HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_RESET);
   Control_DisableBalanceOutputs();
   Control_StopPulseOutput();
   g_touch_pending = 0U;
@@ -1351,7 +1355,8 @@ void Control_Init(void)
   TftUi_LoadCalibrationData(&g_calibration_data);
   TftUi_SetCounters(g_total_weld_count, g_session_weld_count);
 
-  HAL_GPIO_WritePin(CH_EN_GPIO_Port, CH_EN_Pin, GPIO_PIN_RESET);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0U);
+  HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_RESET);
   Control_DisableBalanceOutputs();
   Control_StopPulseOutput();
 
@@ -1394,6 +1399,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     }
     g_adc_average_collecting = 0U;
     g_adc_average_ready = 1U;
+    HAL_GPIO_WritePin(ADC_EN_GPIO_Port, ADC_EN_Pin, GPIO_PIN_RESET);
   }
 }
 

@@ -447,6 +447,7 @@ static char g_safety_alert_messages[TFT_UI_SAFETY_ALERT_COUNT][64] = {{0}};
 static uint8_t g_safety_alert_mask = 0U;
 static uint8_t g_calibration_selection = 0U;
 static uint8_t g_calibration_active = 0U;
+static uint8_t g_capacity_calibration_active = 0U;
 static float g_weld_energy_j = 0.0f;
 static uint8_t g_weld_energy_valid = 0U;
 
@@ -782,6 +783,8 @@ void TftUi_SetCalibrationStatus(const char *status)
 void TftUi_SetCalibrationActive(uint8_t active)
 {
   g_calibration_active = (active != 0U) ? 1U : 0U;
+  g_capacity_calibration_active =
+      ((g_calibration_active != 0U) && (g_calibration_selection == 0U)) ? 1U : 0U;
   g_dirty = 1U;
 }
 
@@ -1079,7 +1082,8 @@ void TftUi_DrawHome(void)
            (unsigned int)(total_cv / 100U), (unsigned int)(total_cv % 100U));
   PowerMgr_GetStatus(&power_status);
   charging_active = (uint8_t)(
-    HAL_GPIO_ReadPin(CH_EN_GPIO_Port, CH_EN_Pin) == GPIO_PIN_SET);
+    (power_status.charge_state == POWER_MGR_CHARGE_CC) ||
+    (power_status.charge_state == POWER_MGR_CHARGE_CV));
   if ((power_status.ina226_connected != 0U) &&
       (power_status.measurement_valid != 0U))
   {
@@ -1543,7 +1547,9 @@ void TftUi_Task(void)
     return;
   }
 
-  if (g_msg[0] != '\0' && (int32_t)(HAL_GetTick() - g_msg_deadline_ms) >= 0)
+  if ((g_msg[0] != '\0') &&
+      (g_capacity_calibration_active == 0U) &&
+      ((int32_t)(HAL_GetTick() - g_msg_deadline_ms) >= 0))
   {
     g_msg[0] = '\0';
     g_msg_deadline_ms = 0;
